@@ -1,0 +1,21 @@
+:root {
+  --bg: #070b14;
+  --bg2: #0c1120;
+  --bg3: #111827;
+  --card: #0f1623;
+  --border: #1a2744;
+  --border2: #243355;
+  --accent: #3b82f6;
+  --accent2: #06b6d4;
+  --accent3: #8b5cf6;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --ok: #10b981;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --muted: #475569;
+  --font: 'Segoe UI', system-ui, sans-serif;
+  --sidebar-w: 240px;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
