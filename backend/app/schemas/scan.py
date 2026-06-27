@@ -8,6 +8,7 @@ class ScanCreateRequest(BaseModel):
     content_text: str = Field(..., max_length=5000)
     platform: str = Field(..., pattern="^(telegram|instagram|olx|darkweb|other)$")
     source_url: Optional[str] = None
+    city: Optional[str] = None
 
 
 class ScanResponse(BaseModel):
@@ -22,6 +23,7 @@ class ScanResponse(BaseModel):
     threat_type: Optional[str]
     keywords_found: Optional[list[str]]
     ai_explanation: Optional[str]
+    city: Optional[str]
     status: str
     created_at: datetime
 
