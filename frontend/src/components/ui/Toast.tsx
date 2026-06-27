@@ -1,5 +1,4 @@
 import { useNotifStore } from '@/store/notifStore'
-import styles from './Toast.module.css'
 
 export function ToastContainer() {
   const { toasts } = useNotifStore()

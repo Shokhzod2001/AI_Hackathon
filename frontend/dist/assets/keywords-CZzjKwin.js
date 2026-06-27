@@ -1,0 +1,1 @@
+import{b as a}from"./index-DUKbtJXr.js";const s={list:t=>a.get("/keywords",{params:t?{risk_level:t}:{}}).then(e=>e.data),create:t=>a.post("/keywords",t).then(e=>e.data),update:(t,e)=>a.patch(`/keywords/${t}`,e).then(d=>d.data),delete:t=>a.delete(`/keywords/${t}`),bulk:t=>a.post("/keywords/bulk",{keywords:t}).then(e=>e.data)};export{s as k};

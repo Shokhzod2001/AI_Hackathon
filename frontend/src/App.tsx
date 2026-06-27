@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppRouter } from '@/router'
 import { useThemeStore } from '@/store/themeStore'
+import { useAuthStore } from '@/store/authStore'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,10 +22,22 @@ function ThemeInit() {
   return null
 }
 
+function AuthInit() {
+  const { accessToken, user, loadUser } = useAuthStore()
+  useEffect(() => {
+    // If we have a token but no user object (e.g. after page refresh), re-fetch the user
+    if (accessToken && !user) {
+      loadUser()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeInit />
+      <AuthInit />
       <AppRouter />
     </QueryClientProvider>
   )

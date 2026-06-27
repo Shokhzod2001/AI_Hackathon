@@ -11,6 +11,11 @@ import { useT } from '@/lib/i18n'
 export function SettingsPage() {
   const [newWord, setNewWord] = useState('')
   const [newLevel, setNewLevel] = useState<'high' | 'mid' | 'low'>('high')
+  const [apiKeys, setApiKeys] = useState<Record<string, string>>({
+    ANTHROPIC_API_KEY: '',
+    TELEGRAM_BOT_TOKEN: '',
+    UZINFOCOM_API_KEY: '',
+  })
   const { settings, toggle } = useSettingsStore()
   const { showToast } = useNotifStore()
   const qc = useQueryClient()
@@ -25,7 +30,7 @@ export function SettingsPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => keywordsApi.delete(id),
+    mutationFn: (id: number) => keywordsApi.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['keywords'] }); showToast('🗑 Deleted', 'success') },
   })
 
@@ -72,17 +77,32 @@ export function SettingsPage() {
           <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 20, boxShadow: '0 4px 20px var(--shadow-card)' }}>
             <div className="panel-accent-line" style={{ margin: '-20px -20px 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>{t('settings.api_keys')}</div>
-            {[['ANTHROPIC_API_KEY', 'Claude AI analysis'], ['TELEGRAM_BOT_TOKEN', 'Telegram messages'], ['UZINFOCOM_API_KEY', 'Block requests']].map(([k, d]) => (
+            {([
+              ['ANTHROPIC_API_KEY', 'Claude AI tahlil uchun'],
+              ['TELEGRAM_BOT_TOKEN', 'Telegram xabarlari uchun'],
+              ['UZINFOCOM_API_KEY', 'Bloklash so\'rovlari uchun'],
+            ] as [string, string][]).map(([k, d]) => (
               <div key={k} style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.5px', fontWeight: 600 }}>{k}</div>
                 <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 5 }}>{d}</div>
-                <input type="password" defaultValue="sk-ant-api03-***" style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 7, fontSize: 12, outline: 'none', transition: 'border-color .2s' }}
+                <input
+                  type="password"
+                  value={apiKeys[k] ?? ''}
+                  onChange={(e) => setApiKeys((prev) => ({ ...prev, [k]: e.target.value }))}
+                  placeholder="Kalit kiriting..."
+                  style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: 7, fontSize: 12, outline: 'none', transition: 'border-color .2s' }}
                   onFocus={(e) => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(59,130,246,.5)' }}
                   onBlur={(e) => { (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border)' }}
                 />
               </div>
             ))}
-            <button onClick={() => showToast('✅ ' + t('settings.save'), 'success')} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', marginTop: 6, boxShadow: '0 0 14px rgba(37,99,235,.3)', transition: 'all .2s' }}>
+            <button
+              onClick={() => {
+                Object.entries(apiKeys).forEach(([k, v]) => { if (v) localStorage.setItem(k, v) })
+                showToast('✅ ' + t('settings.save'), 'success')
+              }}
+              style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', marginTop: 6, boxShadow: '0 0 14px rgba(37,99,235,.3)', transition: 'all .2s' }}
+            >
               {t('settings.save')}
             </button>
           </div>

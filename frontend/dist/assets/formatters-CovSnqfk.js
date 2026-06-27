@@ -1,0 +1,1 @@
+function r(t){return new Date(t).toLocaleString("uz-UZ",{dateStyle:"short",timeStyle:"short"})}function a(t,e){return t.length>e?t.slice(0,e)+"…":t}const n={telegram:"📱",instagram:"📸",olx:"🛒",darkweb:"🌐",other:"📄"};export{n as P,r as f,a as t};

@@ -22,21 +22,11 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: async (username, password) => {
-        try {
-          const tokens = await authApi.login(username, password)
-          localStorage.setItem('access_token', tokens.access_token)
-          localStorage.setItem('refresh_token', tokens.refresh_token)
-          set({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token, isAuthenticated: true })
-          await get().loadUser()
-        } catch {
-          if (username === 'admin' && password === 'admin123') {
-            const demoUser: User = { id: 'demo-001', username: 'admin', email: 'admin@narkomonitor.uz', role: 'admin', is_active: true, created_at: new Date().toISOString() }
-            localStorage.setItem('access_token', 'demo-token')
-            set({ user: demoUser, accessToken: 'demo-token', isAuthenticated: true })
-          } else {
-            throw new Error('Invalid credentials')
-          }
-        }
+        const tokens = await authApi.login(username, password)
+        localStorage.setItem('access_token', tokens.access_token)
+        localStorage.setItem('refresh_token', tokens.refresh_token)
+        set({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token, isAuthenticated: true })
+        await get().loadUser()
       },
 
       logout: () => {
@@ -54,6 +44,14 @@ export const useAuthStore = create<AuthState>()(
         }
       },
     }),
-    { name: 'auth-store', partialize: (s) => ({ accessToken: s.accessToken, refreshToken: s.refreshToken }) }
+    {
+      name: 'auth-store-v2',
+      partialize: (s) => ({
+        user: s.user,
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+        isAuthenticated: s.isAuthenticated,
+      }),
+    }
   )
 )
