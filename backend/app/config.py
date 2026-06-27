@@ -20,6 +20,11 @@ class Settings(BaseSettings):
 
     telegram_bot_token: str = ""
     telegram_notify_chat_id: str = ""
+    telegram_api_id: int | None = None
+    telegram_api_hash: str = ""
+    telegram_session_string: str = ""
+    telegram_channels: list[str] = []
+    telegram_crawl_limit: int = 50
 
     jwt_secret_key: str = "change-this-secret-key-in-production"
     jwt_algorithm: str = "HS256"

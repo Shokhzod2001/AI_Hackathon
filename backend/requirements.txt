@@ -22,3 +22,7 @@ pytest-cov==6.0.0
 ruff==0.8.4
 aiofiles==24.1.0
 python-dotenv==1.0.1
+scikit-learn==1.5.2
+numpy==1.26.4
+joblib==1.4.2
+telethon==1.37.0

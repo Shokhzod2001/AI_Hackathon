@@ -9,6 +9,7 @@ from app.schemas.scan import (
 )
 from app.services import keyword_service, claude_service
 from app.websocket.manager import manager
+from app.ml import DrugJargonDetector
 
 
 async def create_scan(db: AsyncSession, data: ScanCreateRequest, user_id: uuid.UUID | None = None) -> Scan:
@@ -16,10 +17,21 @@ async def create_scan(db: AsyncSession, data: ScanCreateRequest, user_id: uuid.U
     found = keyword_service.detect_keywords(data.content_text, keywords)
     local_score = keyword_service.calc_risk_score(found, data.content_text)
 
+    # ML model score (JEDIS-inspired, context-based)
+    ml_result = DrugJargonDetector.get().predict(data.content_text)
+    ml_score = ml_result["score"]
+
     ai_result = await claude_service.analyze_text(data.content_text, data.platform)
 
-    final_score = max(local_score, ai_result.get("risk_score", 0)) if ai_result else local_score
+    # Blend: max of keyword, ML, and AI scores — any signal can escalate
+    ai_score = ai_result.get("risk_score", 0) if ai_result else 0
+    final_score = max(local_score, ml_score, ai_score)
     all_found = found["high"] + found["mid"] + found["low"]
+
+    # Merge ML triggers into keyword list
+    for trigger in ml_result.get("triggers", []):
+        if trigger.startswith("pattern:") and trigger not in all_found:
+            all_found.append(trigger)
 
     if ai_result:
         verdict = ai_result.get("verdict", _score_to_verdict(final_score))
