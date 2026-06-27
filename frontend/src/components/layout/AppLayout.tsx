@@ -5,12 +5,20 @@ import { Topbar } from './Topbar'
 import { ToastContainer } from '@/components/ui/Toast'
 
 export function AppLayout() {
+  const [collapsed, setCollapsed] = useState(false)
+  const sidebarWidth = collapsed ? 68 : 250
+
   return (
     <>
-      <Sidebar />
-      <div style={{ marginLeft: 240, minHeight: '100vh', transition: 'margin-left .25s cubic-bezier(.4,0,.2,1)' }}>
-        <Topbar sidebarWidth={240} />
-        <div style={{ padding: 24 }}>
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+      <div style={{
+        marginLeft: sidebarWidth,
+        minHeight: '100vh',
+        transition: 'margin-left .22s ease',
+        background: 'var(--bg)',
+      }}>
+        <Topbar sidebarWidth={sidebarWidth} />
+        <div style={{ padding: '24px 28px' }}>
           <Outlet />
         </div>
       </div>

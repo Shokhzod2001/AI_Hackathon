@@ -1,24 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
 @import './variables.css';
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { font-size: 14px; }
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font);
+  font-family: var(--font-head);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 a { color: inherit; text-decoration: none; }
-button { font-family: var(--font); }
+button { font-family: var(--font-head); cursor: pointer; }
+input, select, textarea { font-family: var(--font-head); }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
 
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-@keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-@keyframes feedIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+/* ── Keyframes ───────────────────────────────────── */
+@keyframes fadeIn    { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes slideUp   { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes feedIn    { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: translateX(0) } }
+@keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ── Utility ──────────────────────────────────────── */
+.anim-fade-in  { animation: fadeIn  .3s ease both; }
+.anim-slide-up { animation: slideUp .25s ease both; }
+
+.stagger > *:nth-child(1) { animation-delay: .04s }
+.stagger > *:nth-child(2) { animation-delay: .09s }
+.stagger > *:nth-child(3) { animation-delay: .14s }
+.stagger > *:nth-child(4) { animation-delay: .19s }
+.stagger > *:nth-child(5) { animation-delay: .24s }
+.stagger > *:nth-child(6) { animation-delay: .29s }
+
+/* ── Typography helpers ──────────────────────────── */
+.label {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text2);
+}
+
+.data { font-family: var(--font-data); }
+
+/* ── Layout helpers ──────────────────────────────── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.rule-top    { border-top: var(--rule); }
+.rule-bottom { border-bottom: var(--rule); }
+
+/* Accent line used by ScannerPage/ReportsPage panels */
+.panel-accent-line {
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--info));
+}

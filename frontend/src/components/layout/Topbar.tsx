@@ -2,83 +2,301 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useNotifStore } from '@/store/notifStore'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
+import { useLangStore, type Lang } from '@/store/langStore'
+import { useT } from '@/lib/i18n'
+import { Search, Bell, Sun, Moon, Plus } from 'lucide-react'
 
-const TITLES: Record<string, string> = {
-  '/dashboard': 'Bosh panel',
-  '/scanner': 'AI Skaner',
-  '/alerts': 'Ogohlantirishlar',
-  '/map': 'Faollik xaritasi',
-  '/reports': 'Hisobotlar',
-  '/settings': 'Sozlamalar',
+const PAGE_KEY: Record<string, string> = {
+  '/dashboard': 'page.dashboard',
+  '/scanner':   'page.scanner',
+  '/alerts':    'page.alerts',
+  '/map':       'page.map',
+  '/reports':   'page.reports',
+  '/settings':  'page.settings',
 }
+
+const LANGS: { code: Lang; label: string }[] = [
+  { code: 'uz', label: 'UZ' },
+  { code: 'ru', label: 'RU' },
+  { code: 'en', label: 'EN' },
+]
 
 export function Topbar({ sidebarWidth }: { sidebarWidth: number }) {
   const [clock, setClock] = useState('')
   const [showNotif, setShowNotif] = useState(false)
+  const [showUser, setShowUser] = useState(false)
   const { unreadCount, markAllRead } = useNotifStore()
   const { user, logout } = useAuthStore()
+  const { theme, toggle: toggleTheme } = useThemeStore()
+  const { lang, setLang } = useLangStore()
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const t = useT()
 
   useEffect(() => {
-    const update = () => setClock(new Date().toLocaleString('uz-UZ', { dateStyle: 'short', timeStyle: 'medium' }))
+    const update = () => setClock(new Date().toLocaleTimeString('en-GB'))
     update()
-    const t = setInterval(update, 1000)
-    return () => clearInterval(t)
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (!showNotif && !showUser) return
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-dropdown]')) {
+        setShowNotif(false); setShowUser(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showNotif, showUser])
+
+  const pageTitle = t(PAGE_KEY[pathname] ?? 'page.dashboard')
+  const initials = (user?.username?.[0] ?? 'A').toUpperCase()
+
+  const iconBtn = (active?: boolean): React.CSSProperties => ({
+    width: 38, height: 38, borderRadius: 8,
+    border: 'none',
+    background: active ? 'var(--surface2)' : 'transparent',
+    color: 'var(--text2)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background .15s, color .15s',
+    flexShrink: 0,
+  })
 
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 150,
-      background: 'rgba(7,11,20,.9)', backdropFilter: 'blur(20px)',
+      background: 'var(--surface)',
       borderBottom: '1px solid var(--border)',
-      padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 12, height: 56,
-      marginLeft: sidebarWidth, transition: 'margin-left .25s cubic-bezier(.4,0,.2,1)',
+      marginLeft: sidebarWidth,
+      transition: 'margin-left .22s ease',
+      height: 64,
+      display: 'flex', alignItems: 'center',
+      padding: '0 24px', gap: 12,
+      boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
     }}>
-      <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{TITLES[pathname] || 'NarkoMonitor'}</div>
+      {/* Page title */}
+      <span style={{
+        fontSize: 16, fontWeight: 700,
+        color: 'var(--text)', whiteSpace: 'nowrap',
+        letterSpacing: '.2px',
+      }}>
+        {pageTitle}
+      </span>
 
-      <div style={{ flex: 1, maxWidth: 340, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
-        <span style={{ color: 'var(--muted)', fontSize: 13 }}>🔎</span>
+      {/* Search */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        flex: 1, maxWidth: 340,
+        background: 'var(--surface2)',
+        border: '1px solid var(--border)',
+        borderRadius: 8,
+        padding: '0 12px',
+        height: 38,
+        marginLeft: 8,
+      }}>
+        <Search size={14} color="var(--text2)" />
         <input
-          style={{ background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 12, padding: '7px 0', width: '100%', fontFamily: 'var(--font)' }}
-          placeholder="Qidirish: kalit so'z, platforma, hodisa..."
+          style={{
+            background: 'none', border: 'none', outline: 'none',
+            fontSize: 13, fontFamily: 'var(--font-head)',
+            color: 'var(--text)', width: '100%',
+          }}
+          placeholder={t('topbar.search_ph')}
         />
       </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'monospace', padding: '0 8px' }}>{clock}</span>
-        <button onClick={() => {}} style={{ padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text2)' }}>
-          ↻ Yangilash
+      {/* Right controls */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Clock */}
+        <span style={{
+          fontSize: 13, fontWeight: 500,
+          color: 'var(--text2)', padding: '0 10px',
+          letterSpacing: '.3px',
+        }}>{clock}</span>
+
+        {/* Language switcher */}
+        <div style={{
+          display: 'flex', gap: 2,
+          background: 'var(--surface2)',
+          border: '1px solid var(--border)',
+          borderRadius: 8, padding: '2px 3px',
+        }}>
+          {LANGS.map(({ code, label }) => (
+            <button
+              key={code}
+              onClick={() => setLang(code)}
+              style={{
+                fontSize: 11, fontWeight: 700,
+                padding: '3px 8px', border: 'none', borderRadius: 6,
+                background: lang === code ? 'var(--primary)' : 'transparent',
+                color: lang === code ? '#fff' : 'var(--text2)',
+                cursor: 'pointer', letterSpacing: '1px',
+                transition: 'all .15s',
+              }}
+            >{label}</button>
+          ))}
+        </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          style={iconBtn()}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+        >
+          {theme === 'dark'
+            ? <Sun  size={16} color="var(--warning)" />
+            : <Moon size={16} color="var(--text2)" />
+          }
         </button>
-        <button onClick={() => navigate('/scanner')} style={{ padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff' }}>
-          + Yangi skan
+
+        {/* New scan button */}
+        <button
+          onClick={() => navigate('/scanner')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '0 14px', height: 38, borderRadius: 8,
+            border: 'none',
+            background: 'var(--primary)', color: '#fff',
+            fontSize: 13, fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'opacity .15s, background .15s',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary2)' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary)' }}
+        >
+          <Plus size={15} />
+          {t('topbar.new_scan')}
         </button>
-        <div style={{ position: 'relative' }}>
-          <div
-            onClick={() => setShowNotif(!showNotif)}
-            style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}
+
+        {/* Notifications */}
+        <div data-dropdown style={{ position: 'relative' }}>
+          <button
+            onClick={() => { setShowNotif(!showNotif); setShowUser(false) }}
+            style={{ ...iconBtn(showNotif), position: 'relative' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
+            onMouseLeave={(e) => { if (!showNotif) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
           >
-            🔔
+            <Bell size={16} color={unreadCount > 0 ? 'var(--danger)' : 'var(--text2)'} />
             {unreadCount > 0 && (
-              <span style={{ position: 'absolute', top: 5, right: 5, width: 8, height: 8, background: 'var(--danger)', borderRadius: '50%', border: '2px solid var(--bg)' }} />
+              <span style={{
+                position: 'absolute', top: 6, right: 6,
+                width: 7, height: 7,
+                background: 'var(--danger)', borderRadius: '50%',
+                border: '1.5px solid var(--surface)',
+                animation: 'pulse 1.5s ease-in-out infinite',
+              }} />
             )}
-          </div>
+          </button>
+
           {showNotif && (
-            <div style={{ position: 'absolute', top: 44, right: 0, width: 300, background: 'var(--card)', border: '1px solid var(--border2)', borderRadius: 'var(--radius)', boxShadow: '0 20px 60px rgba(0,0,0,.6)', zIndex: 500, animation: 'slideDown .2s ease' }}>
-              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>Bildirishnomalar</span>
-                <span onClick={markAllRead} style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer' }}>Barchasini o'qildi</span>
+            <div className="anim-slide-up" style={{
+              position: 'absolute', top: 46, right: 0, width: 300,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              boxShadow: 'var(--shadow-lg)',
+              zIndex: 500,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                padding: '12px 16px', borderBottom: '1px solid var(--border)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{t('topbar.notifications')}</span>
+                <span
+                  onClick={markAllRead}
+                  style={{ fontSize: 12, color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
+                >{t('topbar.mark_read')}</span>
               </div>
-              <div style={{ padding: 12, fontSize: 12, color: 'var(--text2)' }}>Yangi bildirishnomalar yo'q</div>
+              <div style={{ padding: '16px', fontSize: 13, color: 'var(--text2)', textAlign: 'center' }}>
+                {t('topbar.no_notif')}
+              </div>
             </div>
           )}
         </div>
-        <div
-          onClick={logout}
-          style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', border: '2px solid var(--border2)' }}
-          title={user?.username}
-        >
-          {user?.username?.[0]?.toUpperCase() || 'A'}
+
+        {/* User */}
+        <div data-dropdown style={{ position: 'relative' }}>
+          <button
+            onClick={() => { setShowUser(!showUser); setShowNotif(false) }}
+            style={{
+              width: 38, height: 38, borderRadius: 8,
+              border: 'none',
+              background: showUser ? 'var(--surface2)' : 'var(--primary-bg)',
+              cursor: 'pointer', transition: 'background .15s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{
+              fontWeight: 800, fontSize: 14,
+              color: 'var(--primary)',
+            }}>{initials}</span>
+          </button>
+
+          {showUser && (
+            <div className="anim-slide-up" style={{
+              position: 'absolute', top: 46, right: 0, width: 230,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              boxShadow: 'var(--shadow-lg)',
+              zIndex: 500,
+              overflow: 'hidden',
+            }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>
+                  {user?.username || 'Admin'}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text2)' }}>
+                  {user?.email || 'admin@clearnet.uz'}
+                </div>
+                <div style={{
+                  marginTop: 8, display: 'inline-block',
+                  fontSize: 10, fontWeight: 700,
+                  color: 'var(--primary)',
+                  background: 'var(--primary-bg)',
+                  padding: '2px 8px', borderRadius: 12,
+                  textTransform: 'uppercase', letterSpacing: '1px',
+                }}>{user?.role || 'ADMIN'}</div>
+              </div>
+
+              {[
+                { label: 'Profil',     action: () => { setShowUser(false); navigate('/settings') } },
+                { label: 'Sozlamalar', action: () => { setShowUser(false); navigate('/settings') } },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  onClick={item.action}
+                  style={{
+                    padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                    color: 'var(--text)', cursor: 'pointer',
+                    borderBottom: '1px solid var(--border)',
+                    transition: 'background .15s',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface2)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+                >{item.label}</div>
+              ))}
+
+              <div
+                onClick={() => { setShowUser(false); logout() }}
+                style={{
+                  padding: '11px 16px', fontSize: 13, fontWeight: 600,
+                  color: 'var(--danger)', cursor: 'pointer',
+                  transition: 'background .15s',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--danger-bg)' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+              >Chiqish</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

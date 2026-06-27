@@ -1,23 +1,34 @@
-import { useEffect, useRef } from 'react'
-
-type Color = 'red' | 'yellow' | 'blue' | 'green'
-
-const COLOR_MAP: Record<Color, string> = {
-  red: 'var(--danger)', yellow: 'var(--warn)', blue: 'var(--accent)', green: 'var(--ok)',
-}
+import { useEffect, useRef, type ReactNode } from 'react'
 
 interface StatCardProps {
-  icon: string
   value: number
   label: string
-  trend?: string
-  trendUp?: boolean
-  color: Color
-  progress: number
+  sub?: string
+  ribbon?: 'signal' | 'warn' | 'ok' | 'none'
+  delta?: string
+  deltaUp?: boolean
+  icon?: ReactNode
+  iconBg?: string
 }
 
-export function StatCard({ icon, value, label, trend, trendUp, color, progress }: StatCardProps) {
+const RIBBON_COLOR: Record<string, string> = {
+  signal: 'var(--danger)',
+  warn:   'var(--warning)',
+  ok:     'var(--success)',
+  none:   'var(--primary)',
+}
+
+const RIBBON_BG: Record<string, string> = {
+  signal: 'var(--danger-bg)',
+  warn:   'var(--warning-bg)',
+  ok:     'var(--success-bg)',
+  none:   'var(--primary-bg)',
+}
+
+export function StatCard({ value, label, sub, ribbon = 'none', delta, deltaUp, icon, iconBg }: StatCardProps) {
   const numRef = useRef<HTMLDivElement>(null)
+  const color = RIBBON_COLOR[ribbon]
+  const bg    = iconBg ?? RIBBON_BG[ribbon]
 
   useEffect(() => {
     const el = numRef.current
@@ -30,36 +41,63 @@ export function StatCard({ icon, value, label, trend, trendUp, color, progress }
       el.textContent = Math.round(ease * value).toLocaleString()
       if (p < 1) requestAnimationFrame(step)
     }
-    requestAnimationFrame(step)
+    const id = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(id)
   }, [value])
-
-  const c = COLOR_MAP[color]
 
   return (
     <div style={{
-      background: 'var(--card)', border: '1px solid var(--border)',
-      borderRadius: 'var(--radius)', padding: 18, position: 'relative',
-      overflow: 'hidden', transition: 'transform .2s, box-shadow .2s',
-    }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,.3)' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = '' }}
-    >
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${c}, ${c}99)` }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 20 }}>{icon}</span>
-        {trend && (
-          <span style={{
-            fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 600,
-            background: trendUp ? 'rgba(239,68,68,.15)' : 'rgba(16,185,129,.15)',
-            color: trendUp ? '#fca5a5' : '#6ee7b7',
-          }}>{trend}</span>
+      background: 'var(--surface)',
+      borderRadius: 'var(--radius)',
+      boxShadow: 'var(--shadow)',
+      border: '1px solid var(--border)',
+      padding: '20px 22px',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+      gap: 16,
+    }}>
+      {/* Left: metric */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.8px', color: 'var(--text2)', marginBottom: 8,
+        }}>{label}</div>
+
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <div
+            ref={numRef}
+            style={{
+              fontSize: 28, fontWeight: 800,
+              color: 'var(--text)', lineHeight: 1,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >0</div>
+          {delta && (
+            <span style={{
+              fontSize: 12, fontWeight: 600,
+              color: deltaUp ? 'var(--danger)' : 'var(--success)',
+            }}>{delta}</span>
+          )}
+        </div>
+
+        {sub && (
+          <div style={{
+            fontSize: 12, color: 'var(--text2)', marginTop: 5, fontWeight: 500,
+          }}>{sub}</div>
         )}
       </div>
-      <div ref={numRef} style={{ fontSize: 30, fontWeight: 800, marginBottom: 4, letterSpacing: -1 }}>0</div>
-      <div style={{ fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.6px' }}>{label}</div>
-      <div style={{ height: 3, background: 'var(--bg3)', borderRadius: 2, marginTop: 12, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${progress}%`, borderRadius: 2, background: c, transition: 'width 1s ease' }} />
-      </div>
+
+      {/* Right: icon badge */}
+      {icon && (
+        <div style={{
+          width: 52, height: 52, borderRadius: 'var(--radius)',
+          background: bg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          color: color,
+        }}>
+          {icon}
+        </div>
+      )}
     </div>
   )
 }
