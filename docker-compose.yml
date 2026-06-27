@@ -47,6 +47,21 @@ services:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://nm_user:nm_pass@postgres:5432/narkomonitor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python seed.py
+    profiles:
+      - seed
+
   celery:
     build:
       context: ./backend
