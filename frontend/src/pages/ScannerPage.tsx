@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useScanStore } from '@/store/scanStore'
 import { useNotifStore } from '@/store/notifStore'
 import { RiskCircle } from '@/components/scanner/RiskCircle'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { Modal } from '@/components/ui/Modal'
-import { DEFAULT_KEYWORDS } from '@/lib/riskCalc'
+import { keywordsApi } from '@/api/keywords'
 import { PLATFORM_ICONS } from '@/lib/formatters'
 import { useT } from '@/lib/i18n'
+import type { Keyword } from '@/types'
 
 const EXAMPLES = [
   "Tur bor yaxshi sifatli, narxi arzon, etkazib beraman. Kanal: @shop_uz. Do'stlarga reklama qiling.",
@@ -26,6 +28,7 @@ export function ScannerPage() {
   const { currentResult, isLoading, step, runScan, clearScan, blockAction, reportAction } = useScanStore()
   const { showToast } = useNotifStore()
   const t = useT()
+  const { data: allKeywords } = useQuery({ queryKey: ['keywords'], queryFn: () => keywordsApi.list() })
 
   const STEPS = [t('scanner.step1'), t('scanner.step2'), t('scanner.step3')]
 
@@ -165,16 +168,26 @@ export function ScannerPage() {
             <div className="panel-accent-line" />
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{t('scanner.slang')}</div>
             <div style={{ padding: 18 }}>
-              {[[t('scanner.high_risk'), DEFAULT_KEYWORDS.high, '#fca5a5', 'rgba(239,68,68,.15)'], [t('scanner.mid_risk'), DEFAULT_KEYWORDS.mid, '#fcd34d', 'rgba(245,158,11,.15)'], [t('scanner.low_risk'), DEFAULT_KEYWORDS.low, '#6ee7b7', 'rgba(16,185,129,.1)']].map(([label, words, color, bg]) => (
-                <div key={label as string} style={{ marginBottom: 12 }}>
-                  <div style={{ color: color as string, fontWeight: 600, marginBottom: 6, fontSize: 11 }}>{label as string}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {(words as string[]).map((w) => (
-                      <span key={w} style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: bg as string, color: color as string }}>{w}</span>
-                    ))}
+              {([
+                [t('scanner.high_risk'), 'high', '#fca5a5', 'rgba(239,68,68,.15)'],
+                [t('scanner.mid_risk'), 'mid', '#fcd34d', 'rgba(245,158,11,.15)'],
+                [t('scanner.low_risk'), 'low', '#6ee7b7', 'rgba(16,185,129,.1)'],
+              ] as [string, string, string, string][]).map(([label, level, color, bg]) => {
+                const words = (allKeywords ?? []).filter((k: Keyword) => k.risk_level === level)
+                return (
+                  <div key={level} style={{ marginBottom: 12 }}>
+                    <div style={{ color, fontWeight: 600, marginBottom: 6, fontSize: 11 }}>{label}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {words.length === 0 && (
+                        <span style={{ fontSize: 10, color: 'var(--text2)' }}>—</span>
+                      )}
+                      {words.map((k: Keyword) => (
+                        <span key={k.id} style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 600, background: bg, color }}>{k.word}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { PlatformDoughnut } from '@/components/charts/PlatformDoughnut'
 import { KeywordsBarChart } from '@/components/charts/KeywordsBarChart'
 import { scansApi } from '@/api/scans'
 import { mapApi } from '@/api/map'
+import { adminApi } from '@/api/auth'
 import { formatDate, truncateText, PLATFORM_ICONS } from '@/lib/formatters'
 import { Badge } from '@/components/ui/Badge'
 import { useT } from '@/lib/i18n'
@@ -74,6 +75,7 @@ export function DashboardPage() {
   const { data: keywords } = useQuery({ queryKey: ['stats-keywords'], queryFn: scansApi.stats.topKeywords })
   const { data: feed } = useQuery({ queryKey: ['live-feed'], queryFn: mapApi.liveFeed, refetchInterval: 8_000 })
   const { data: scans } = useQuery({ queryKey: ['recent-scans'], queryFn: () => scansApi.list({ per_page: 5 }) })
+  const { data: auditLogs } = useQuery({ queryKey: ['audit-logs'], queryFn: adminApi.getAuditLogs, refetchInterval: 15_000 })
 
   const statusBadge = (s: string) => {
     const map: Record<string, 'red' | 'blue' | 'yellow'> = { blocked: 'red', reported: 'blue', pending: 'yellow' }
@@ -88,34 +90,26 @@ export function DashboardPage() {
         gap: 20, marginBottom: 24,
       }}>
         <StatCard
-          value={stats?.total_detected ?? 1247}
+          value={stats?.total_detected ?? 0}
           label={t('dash.stat_detected')}
           ribbon="signal"
-          delta="+34"
-          deltaUp
-          sub={t('dash.stat_detected')}
           icon={<AlertTriangle size={22} />}
         />
         <StatCard
-          value={stats?.total_pending ?? 89}
+          value={stats?.total_pending ?? 0}
           label={t('dash.stat_pending')}
           ribbon="warn"
-          sub="Qayta ko'rib chiqishda"
           icon={<Clock size={22} />}
         />
         <StatCard
-          value={stats?.total_blocked ?? 943}
+          value={stats?.total_blocked ?? 0}
           label={t('dash.stat_blocked')}
           ribbon="ok"
-          delta="75.6%"
-          sub="Aniqlangan postlardan"
           icon={<ShieldCheck size={22} />}
         />
         <StatCard
-          value={stats?.total_reported ?? 312}
+          value={stats?.total_reported ?? 0}
           label={t('dash.stat_reported')}
-          delta="+12"
-          sub="Idoralarga yuborilgan"
           icon={<Send size={22} />}
         />
       </div>
@@ -221,23 +215,28 @@ export function DashboardPage() {
         </Panel>
 
         <Panel title={t('dash.sys_logs')} badge={LIVEBADGE}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              'Telegram crawler: 127 kanal skanerlandi',
-              'NLP engine: mBERT model yuklandi',
-              'Risk engine: 23 yangi hodisa',
-              'Telegram bot: 7 ogohlantirish yuborildi',
-            ].map((l, i) => (
-              <div key={i} className="anim-fade-in" style={{
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto' }}>
+            {(auditLogs ?? []).length === 0 && (
+              <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', padding: '20px 0' }}>
+                Hozircha log yozuvlari yo'q
+              </div>
+            )}
+            {(auditLogs ?? []).slice(0, 8).map((log: { id: string | number; action: string; entity_type: string; created_at: string }, i: number) => (
+              <div key={log.id} className="anim-fade-in" style={{
                 padding: '10px 14px',
                 borderLeft: '3px solid var(--success)',
                 background: 'var(--success-bg)',
                 borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
-                animationDelay: `${i * 0.09}s`,
-                display: 'flex', gap: 12, alignItems: 'center',
+                animationDelay: `${i * 0.07}s`,
+                display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between',
               }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', letterSpacing: '.5px' }}>OK</span>
-                <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{l}</span>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', letterSpacing: '.5px', flexShrink: 0 }}>OK</span>
+                  <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>
+                    {log.action} — <span style={{ color: 'var(--text2)' }}>{log.entity_type}</span>
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--text2)', flexShrink: 0 }}>{formatDate(log.created_at)}</span>
               </div>
             ))}
           </div>
