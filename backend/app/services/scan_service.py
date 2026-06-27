@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, delete
+from sqlalchemy import select, func, and_, delete, text
 from app.models.scan import Scan
 from app.schemas.scan import (
     ScanCreateRequest, DashboardStats, WeeklyStats,
@@ -39,6 +39,7 @@ async def create_scan(db: AsyncSession, data: ScanCreateRequest, user_id: uuid.U
         keywords_found=all_found or None,
         ai_explanation=ai_result.get("explanation") if ai_result else None,
         ai_raw_response=ai_result,
+        city=data.city,
         status="blocked" if final_score >= 70 else "pending",
     )
     db.add(scan)
@@ -128,10 +129,27 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
 
 
 async def get_weekly_stats(db: AsyncSession) -> WeeklyStats:
+    result = await db.execute(text("""
+        SELECT
+            to_char(d::date, 'Dy') AS label,
+            COUNT(s.id) FILTER (WHERE s.id IS NOT NULL) AS detected,
+            COUNT(s.id) FILTER (WHERE s.status = 'blocked') AS blocked
+        FROM generate_series(
+            CURRENT_DATE - INTERVAL '6 days',
+            CURRENT_DATE,
+            INTERVAL '1 day'
+        ) d
+        LEFT JOIN scans s ON s.created_at::date = d::date
+        GROUP BY d
+        ORDER BY d
+    """))
+    rows = result.all()
+    day_map = {"Mon": "Dush", "Tue": "Sesh", "Wed": "Chor", "Thu": "Pay",
+               "Fri": "Jum", "Sat": "Shan", "Sun": "Yak"}
     return WeeklyStats(
-        labels=["Dush", "Sesh", "Chor", "Pay", "Jum", "Shan", "Yak"],
-        detected=[45, 72, 58, 91, 67, 83, 49],
-        blocked=[38, 60, 49, 75, 55, 70, 41],
+        labels=[day_map.get(r[0], r[0]) for r in rows],
+        detected=[r[1] for r in rows],
+        blocked=[r[2] for r in rows],
     )
 
 
@@ -144,16 +162,37 @@ async def get_platform_stats(db: AsyncSession) -> PlatformStats:
 
 
 async def get_top_keywords(db: AsyncSession, limit: int = 7) -> list[TopKeyword]:
-    return [
-        TopKeyword(word="tur", count=89), TopKeyword(word="gul", count=67),
-        TopKeyword(word="zakladka", count=54), TopKeyword(word="un", count=43),
-        TopKeyword(word="giyoh", count=38), TopKeyword(word="kokain", count=21),
-        TopKeyword(word="reklama", count=18),
-    ][:limit]
+    result = await db.execute(text("""
+        SELECT kw, COUNT(*) AS cnt
+        FROM scans, unnest(keywords_found) AS kw
+        WHERE keywords_found IS NOT NULL
+        GROUP BY kw
+        ORDER BY cnt DESC
+        LIMIT :lim
+    """), {"lim": limit})
+    rows = result.all()
+    return [TopKeyword(word=r[0], count=r[1]) for r in rows]
 
 
 async def get_monthly_stats(db: AsyncSession) -> MonthlyStats:
+    result = await db.execute(text("""
+        SELECT
+            to_char(d::date, 'Mon') AS label,
+            COUNT(s.id) FILTER (WHERE s.id IS NOT NULL) AS cnt
+        FROM generate_series(
+            date_trunc('year', CURRENT_DATE),
+            date_trunc('month', CURRENT_DATE),
+            INTERVAL '1 month'
+        ) d
+        LEFT JOIN scans s ON date_trunc('month', s.created_at) = d::date
+        GROUP BY d
+        ORDER BY d
+    """))
+    rows = result.all()
+    mon_map = {"Jan": "Yan", "Feb": "Fev", "Mar": "Mar", "Apr": "Apr", "May": "May",
+               "Jun": "Iyn", "Jul": "Iyl", "Aug": "Avg", "Sep": "Sen",
+               "Oct": "Okt", "Nov": "Noy", "Dec": "Dek"}
     return MonthlyStats(
-        labels=["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"],
-        values=[120, 145, 132, 178, 165, 201, 188, 221, 245, 210, 267, 290],
+        labels=[mon_map.get(r[0], r[0]) for r in rows],
+        values=[r[1] for r in rows],
     )

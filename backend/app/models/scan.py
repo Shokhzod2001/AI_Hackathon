@@ -22,6 +22,7 @@ class Scan(Base):
     keywords_found: Mapped[list[str] | None] = mapped_column(ARRAY(Text), nullable=True)
     ai_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_raw_response: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    city: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

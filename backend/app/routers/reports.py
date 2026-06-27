@@ -17,7 +17,7 @@ async def generate_report(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    title = f"Hisobot {data.period_from} — {data.period_to}"
+    title = f"Hisobot {data.period_from.strftime('%d.%m.%Y')} — {data.period_to.strftime('%d.%m.%Y')}"
     report = Report(
         created_by=current_user.id,
         title=title,
